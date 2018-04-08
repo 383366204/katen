@@ -14,6 +14,7 @@ let port = process.env.PORT || 4040;
 app.use(passport.initialize());// 初始化passport模块
 app.use(morgan('dev'));// 命令行中显示程序运行日志,便于bug调试
 app.use(cors());
+app.use(express.static('static'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json()); // 调用bodyParser模块以便程序正确解析body传入值
 
