@@ -28,7 +28,7 @@ router.post('/user/signup', (req, res) => {
         if (err.name == 'BulkWriteError') {
           return res.json({
             success: false,
-            message: '手机号/邮箱号已存在!'
+            message: '手机号/邮箱已存在!'
           });
         }
         return res.json({
@@ -115,6 +115,38 @@ router.get('/user/info',
     });
   });
 
+  // 更改user信息
+  router.post('/user/info',
+  passport.authenticate('bearer', {
+    session: false
+  }),
+  function (req, res) { 
+    User.findByIdAndUpdate(req.user._id,req.body,{new:true,select:'level nickName email phone'},(err,user) => {
+      console.log(user);
+      if (err) {
+        if (err.codeName=='DuplicateKey') {
+          res.json({
+            success: false,
+            message: '手机号/邮箱已存在!'
+          });
+        }
+        console.log(err);
+      }
+      else{     
+        res.json({
+          success: true,
+          message: '修改信息成功!',
+          user:{
+            nickName: user.nickName||'',
+            email: user.email||'',
+            phone: user.phone||'',
+            level: user.level||1
+          }
+        });
+      }
+    });
+  });
+
 // 新增地址
 router.post('/user/address',
   passport.authenticate('bearer', {
@@ -130,29 +162,95 @@ router.post('/user/address',
       phone: req.body.phone,
       isDefault: req.body.isDefault
     });
-
-    newAddress.save((err) => {
+    
+    // 若设为默认，则将数据库里面的其他地址设为不默认
+    if (req.body.isDefault) {
+      Address.update({user:req.user._id},{isDefault:false},{multi:true},(err,raw) => {
+        if (err) {
+          console.log(err);
+        }
+      })
+    }
+    newAddress.save((err,address) => {
       if (err) {
         return res.json({
           success: false,
-          message: '新建地址失败!'
+          message: '新建地址失败!'          
         });
       }
       res.json({
         success: true,
-        message: '新建地址成功!'
+        message: '新建地址成功!',
+        address:{
+          _id:address._id,
+          region:address.region,
+          detail:address.detail,
+          zipCode:address.zipCode||'',
+          name:address.name,
+          phone:address.phone,
+          isDefault:address.isDefault
+        }
       });
     })
     
   });
 
-  // 取得地址
+  // 删除地址
+router.delete('/user/address',
+passport.authenticate('bearer', {
+  session: false
+}),
+function (req, res) {
+  Address.findByIdAndRemove(req.body._id,(err,remData) => {
+    if (err) {
+      return res.json({
+        success: false,
+        message: '删除地址失败!'
+      });
+    }
+    //如果删除了默认地址，则将最新添加的一条地址设为默认地址
+    if (remData.isDefault) {
+      Address.findOneAndUpdate({user:req.user._id},{isDefault:true},{sort:{ '_id':-1}},(err,doc,res) => {
+        if (err) {
+          console.log(err);
+        }
+      })
+    }
+    res.json({
+      success: true,
+      message: '删除地址成功!'
+    });
+  })
+});
+
+// 修改地址
+router.put('/user/address',
+  passport.authenticate('bearer', {
+    session: false
+  }),
+  function (req, res) {
+    // User.findByIdAndUpdate(req.user._id,req.body,{new:true,select:'name region detail zipCode phone isDefault'},(err,address) => {
+    //   console.log(req.body);
+    //   console.log(address);
+    //   if (err) {
+    //     console.log(err);
+    //   }
+    //   else{
+    //     res.json({
+    //       success: true,
+    //       message: '修改信息成功!'
+    //     });
+    //   }
+    // });
+  });
+
+// 取得地址
 router.get('/user/address',
 passport.authenticate('bearer', {
   session: false
 }),
 function (req, res) {
-  Address.find({user:req.user._id}).exec((err,address) => {
+  Address.find({user:req.user._id},'region detail zipCode name phone isDefault').sort({'_id':-1}).exec((err,address) => {
     if (err) {
       console.log(err);
     }
