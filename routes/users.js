@@ -229,19 +229,35 @@ router.put('/user/address',
     session: false
   }),
   function (req, res) {
-    // User.findByIdAndUpdate(req.user._id,req.body,{new:true,select:'name region detail zipCode phone isDefault'},(err,address) => {
-    //   console.log(req.body);
-    //   console.log(address);
-    //   if (err) {
-    //     console.log(err);
-    //   }
-    //   else{
-    //     res.json({
-    //       success: true,
-    //       message: '修改信息成功!'
-    //     });
-    //   }
-    // });
+    // 若是put过来的设为默认地址，则将数据库里其他地址设为非默认
+    if (req.body.isDefault) {
+      Address.update({user:req.user._id},{isDefault:false},{multi:true},(err,raw) => {
+        if (err) {
+          console.log(err);
+        }
+      })
+    }
+    Address.findByIdAndUpdate(req.body._id,req.body,{select:'name region detail zipCode phone isDefault'},(err,address) => {
+      console.log(address);      
+      //  若将默认地址改为非默认地址，将最新一条设为默认
+      if(address.isDefault==true&&req.body.isDefault==false){
+        Address.findOneAndUpdate({user:req.user._id},{isDefault:true},{sort:{ '_id':-1}},(err,doc,res) => {
+          if (err) {
+            console.log(err);
+          }
+        })
+      }
+
+      if (err) {
+        console.log(err);
+      }
+      else{
+        res.json({
+          success: true,
+          message: '修改信息成功!'
+        });
+      }
+    });
   });
 
 // 取得地址
