@@ -11,21 +11,25 @@ require('../passport')(passport);
 
 // 注册账户
 router.post('/user/signup', (req, res) => {
-  console.log(req.sessionID);
-  console.log(req.body.verification);
-  console.log(req.session);
-  if (!req.body.verification || (req.body.verification != req.session.verification)) {
-    res.json({
+  // 判断有没有验证码
+  if (!req.body.verification) {
+    return res.json({
       success: false,
-      message: '验证码错误.'
+      message: '验证码为空'
     });
-    return;
+  }
+  // 比对邮箱验证码
+  if (req.body.email && req.body.verification != req.session.verificationE) {
+    return res.json({
+      success: false,
+      message: '验证码错误'
+    });
   }
 
   if ((!req.body.email && !req.body.phone) || !req.body.password) {
     res.json({
       success: false,
-      message: '请输入您的账号密码.'
+      message: '请输入您的账号密码'
     });
   } else {
     var newUser = new User({
@@ -40,18 +44,20 @@ router.post('/user/signup', (req, res) => {
         if (err.name == 'BulkWriteError') {
           return res.json({
             success: false,
-            message: '手机号/邮箱已存在!'
+            message: '手机号/邮箱已存在'
           });
         }
         return res.json({
           success: false,
-          message: '注册失败!'
+          message: '注册失败'
         });
       }
       res.json({
         success: true,
-        message: '成功创建新用户!'
+        message: '成功创建新用户'
       });
+      // 注册完后清除session
+      req.session.destroy();
     });
   }
 });
@@ -78,7 +84,7 @@ router.post('/user/signin', (req, res) => {
     if (!user) {
       res.json({
         success: false,
-        message: '用户不存在!'
+        message: '用户不存在'
       });
     } else if (user) {
       // 检查密码是否正确
@@ -95,7 +101,7 @@ router.post('/user/signin', (req, res) => {
           });
           res.json({
             success: true,
-            message: '登录成功!',
+            message: '登录成功',
             token: 'Bearer ' + token,
             nickName: user.nickName,
             level: user.level,
@@ -105,7 +111,7 @@ router.post('/user/signin', (req, res) => {
         } else {
           res.send({
             success: false,
-            message: '密码错误!'
+            message: '密码错误'
           });
         }
       });
@@ -137,7 +143,53 @@ router.post('/user/info',
     session: false
   }),
   function (req, res) {
-    User.findByIdAndUpdate(req.user._id, req.body, {
+    let updateData = {};
+
+    // 若有nickNam直接加入到要更新的数据里
+    if (req.body.nickName) {
+      updateData.nickName = req.body.nickName;
+    }
+
+    // 验证密码(若是有oldPassword证明要修改其他信息,若是有password证明要修改密码)
+    if (req.body.oldPassword) {
+      User.comparePassword(req.body.oldPassword, req.user, (err, isMatch) => {
+        // 若有错误则返回
+        if (err || !isMatch) {
+          return res.json({
+            success: false,
+            message: '密码错误'
+          });
+        }
+        // 若没有错误则将密码加入更新数据中
+        if (req.body.password) {
+          updateData.password = req.body.password;
+        }
+      })
+    }
+    // 当有邮箱时，比对邮箱验证码
+    if (req.body.email) {
+      // 若发现验证码不一致则返回
+      if (req.body.verification != req.session.verificationE) {
+        return res.json({
+          success: false,
+          message: '验证码错误'
+        });
+      }
+      // 若没有错误则将邮箱加入更新数据中
+      if (req.body.email) {
+        updateData.email = req.body.email;
+      }
+    }
+
+    // 若有多个属性同时更新，阻止
+    if (Object.keys(updateData).length > 1) {
+      return res.json({
+        success: false,
+        message: '更新属性过多'
+      });
+    }
+
+    User.findByIdAndUpdate(req.user._id, updateData, {
       new: true,
       select: 'level nickName email phone'
     }, (err, user) => {
@@ -146,14 +198,14 @@ router.post('/user/info',
         if (err.codeName == 'DuplicateKey') {
           res.json({
             success: false,
-            message: '手机号/邮箱已存在!'
+            message: '手机号/邮箱已存在'
           });
         }
         console.log(err);
       } else {
         res.json({
           success: true,
-          message: '修改信息成功!',
+          message: '修改信息成功',
           user: {
             nickName: user.nickName || '',
             email: user.email || '',
@@ -161,41 +213,79 @@ router.post('/user/info',
             level: user.level || 1
           }
         });
+        // 清除session
+        req.session.destroy();
       }
     });
   });
 
-// 登录后的获取验证码
-router.put('/user/info/verification',
-  passport.authenticate('bearer', {
-    session: false
-  }),
-  function (req, res) {
-    console.log(req.body);
-    if (req.body.email) {
-      req.session.verification = helper.getVerification(6);
-      res.json({
-        success: true,
-        message: '已发送验证码!'
-      })
-      console.log('session:' + req.session);
-    } else if (req.body.phone) {
 
+// 忘记密码
+router.post('/user/forget', (req, res) => {
+  // 判断有没有验证码
+  if (!req.body.verification) {
+    return res.json({
+      success: false,
+      message: '验证码为空'
+    });
+  }
+  // 对比邮箱验证码
+  if (req.body.email && req.body.verification != req.session.verificationE) {
+    return res.json({
+      success: false,
+      message: '验证码错误'
+    });
+  }
+  let filter = {};
+  // 若post过来的是邮箱，则用邮箱查询
+  if (req.body.email) {
+    filter = {
+      email: req.body.email
+    }
+  }
+  // 否则便用手机查询
+  else if (req.body.phone) {
+    filter = {
+      phone: req.body.phone
+    }
+  }
+  User.findOneAndUpdate(filter, {
+    password: req.body.password
+  }, {
+    new: true
+  }, (err, user, resp) => {
+    if (err) {
+      console.log(err);
+    }
+    if (!user) {
+      return res.json({
+        success: false,
+        message: '用户不存在'
+      });
+    } else if (user) {
+      // 消除session
+      req.session.destroy();
+      return res.json({
+        success: true,
+        message: '密码修改成功'
+      });
     }
   });
+})
 
-// 注册时获取验证码
-router.post('/user/signup/verification', (req, res) => {
-  console.log(req.sessionID);
+// 获取验证码
+router.put('/user/verification', (req, res) => {
   // 邮箱验证
   if (req.body.email) {
-    req.session.verification = helper.getVerification(6);
-    console.log(req.sessionID);
+    // 设置session
+    req.session.verificationE = helper.getVerification(6);
     res.json({
       success: true,
-      message: '已发送验证码!'
+      message: '已发送验证码'
     })
-    req.session.save()
+    req.session.save();
+    //发送邮件
+    helper.sendEmail(req.body.email, req.session.verificationE);
   }
   // 手机验证
   else if (req.body.phone) {
@@ -241,12 +331,12 @@ router.post('/user/address',
       if (err) {
         return res.json({
           success: false,
-          message: '新建地址失败!'
+          message: '新建地址失败'
         });
       }
       res.json({
         success: true,
-        message: '新建地址成功!',
+        message: '新建地址成功',
         address: {
           _id: address._id,
           region: address.region,
@@ -271,7 +361,7 @@ router.delete('/user/address',
       if (err) {
         return res.json({
           success: false,
-          message: '删除地址失败!'
+          message: '删除地址失败'
         });
       }
       //如果删除了默认地址，则将最新添加的一条地址设为默认地址
@@ -292,7 +382,7 @@ router.delete('/user/address',
       }
       res.json({
         success: true,
-        message: '删除地址成功!'
+        message: '删除地址成功'
       });
     })
   });
@@ -343,7 +433,7 @@ router.put('/user/address',
       } else {
         res.json({
           success: true,
-          message: '修改信息成功!'
+          message: '修改信息成功'
         });
       }
     });
