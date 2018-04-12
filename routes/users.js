@@ -34,8 +34,8 @@ router.post('/user/signup', (req, res) => {
   } else {
     var newUser = new User({
       nickName: req.body.nickName,
-      email: req.body.email,
-      phone: req.body.phone,
+      email: req.session.email,
+      phone: req.session.phone,
       password: req.body.password
     });
     // 保存用户账号
@@ -142,19 +142,21 @@ router.post('/user/info',
   passport.authenticate('bearer', {
     session: false
   }),
-  function (req, res) {
-    let updateData = {};
+  function (req, res, next) {
+    req.session.updateData = {};
 
     // 若有nickNam直接加入到要更新的数据里
     if (req.body.nickName) {
-      updateData.nickName = req.body.nickName;
+      req.session.updateData.nickName = req.body.nickName;
+      next();
     }
 
     // 验证密码(若是有oldPassword证明要修改其他信息,若是有password证明要修改密码)
-    if (req.body.oldPassword) {
+    else if (req.body.oldPassword) {
       User.comparePassword(req.body.oldPassword, req.user, (err, isMatch) => {
         // 若有错误则返回
         if (err || !isMatch) {
+          console.log('password err');
           return res.json({
             success: false,
             message: '密码错误'
@@ -162,38 +164,40 @@ router.post('/user/info',
         }
         // 若没有错误则将密码加入更新数据中
         if (req.body.password) {
-          updateData.password = req.body.password;
+          req.session.updateData.password = req.body.password;
+          next();
+        }
+
+        // 当有邮箱时，比对邮箱验证码
+        if (req.body.email) {
+          // 若发现验证码不一致则返回
+          if (req.body.verification != req.session.verificationE) {
+            return res.json({
+              success: false,
+              message: '验证码错误'
+            });
+          }
+          // 若没有错误则将邮箱加入更新数据中
+          if (req.body.email) {
+            req.session.updateData.email = req.session.email;
+            next();
+          }
         }
       })
     }
-    // 当有邮箱时，比对邮箱验证码
-    if (req.body.email) {
-      // 若发现验证码不一致则返回
-      if (req.body.verification != req.session.verificationE) {
-        return res.json({
-          success: false,
-          message: '验证码错误'
-        });
-      }
-      // 若没有错误则将邮箱加入更新数据中
-      if (req.body.email) {
-        updateData.email = req.body.email;
-      }
-    }
-
+  }, (req, res) => {
     // 若有多个属性同时更新，阻止
-    if (Object.keys(updateData).length > 1) {
+    if (Object.keys(req.session.updateData).length != 1) {
+      req.session.destroy();
       return res.json({
         success: false,
-        message: '更新属性过多'
+        message: '更新属性异常'
       });
     }
-
-    User.findByIdAndUpdate(req.user._id, updateData, {
+    User.findByIdAndUpdate(req.user._id, req.session.updateData, {
       new: true,
-      select: 'level nickName email phone'
+      select: '-_id level nickName email phone'
     }, (err, user) => {
-      console.log(user);
       if (err) {
         if (err.codeName == 'DuplicateKey') {
           res.json({
@@ -205,7 +209,7 @@ router.post('/user/info',
       } else {
         res.json({
           success: true,
-          message: '修改信息成功',
+          message: '修改成功',
           user: {
             nickName: user.nickName || '',
             email: user.email || '',
@@ -217,6 +221,7 @@ router.post('/user/info',
         req.session.destroy();
       }
     });
+
   });
 
 
@@ -279,13 +284,15 @@ router.put('/user/verification', (req, res) => {
   if (req.body.email) {
     // 设置session
     req.session.verificationE = helper.getVerification(6);
+    // 将email储存在session中
+    req.session.email = req.body.email;
     res.json({
       success: true,
       message: '已发送验证码'
     })
     req.session.save();
     //发送邮件
-    helper.sendEmail(req.body.email, req.session.verificationE);
+    helper.sendEmail(req.session.email, req.session.verificationE);
   }
   // 手机验证
   else if (req.body.phone) {
