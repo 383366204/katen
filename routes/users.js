@@ -10,56 +10,73 @@ const router = express.Router();
 require('../passport')(passport);
 
 // 注册账户
-router.post('/user/signup', (req, res) => {
+router.post('/user/signup', (req, res, next) => {
   // 判断有没有验证码
   if (!req.body.verification) {
     return res.json({
       success: false,
       message: '验证码为空'
     });
-  }
-  // 比对邮箱验证码
-  if (req.body.email && req.body.verification != req.session.verificationE) {
-    return res.json({
-      success: false,
-      message: '验证码错误'
-    });
-  }
-
-  if ((!req.body.email && !req.body.phone) || !req.body.password) {
-    res.json({
-      success: false,
-      message: '请输入您的账号密码'
-    });
   } else {
-    var newUser = new User({
-      nickName: req.body.nickName,
-      email: req.session.email,
-      phone: req.session.phone,
-      password: req.body.password
-    });
-    // 保存用户账号
-    newUser.save((err) => {
-      if (err) {
-        if (err.name == 'BulkWriteError') {
-          return res.json({
-            success: false,
-            message: '手机号/邮箱已存在'
-          });
-        }
+    if ((!req.body.email && !req.body.phone) || !req.body.password) {
+      return res.json({
+        success: false,
+        message: '请输入您的账号密码'
+      });
+    }
+    // 比对邮箱验证码
+    else if (req.body.email) {
+      if (req.body.verification != req.session.verificationE) {
         return res.json({
           success: false,
-          message: '注册失败'
+          message: '验证码错误'
+        });
+      } else {
+        next();
+      }
+    }
+
+    else if (req.body.phone) {
+      helper.veriPhoneCode(req.session.verificationP,req.body.verification)
+      .then(success=>{
+        console.log('success');
+        if (success) {
+          next();
+        }
+      })
+      .catch(err=>{
+        console.log(err)
+      });
+    }
+  }
+}, (req, res) => {
+  var newUser = new User({
+    nickName: req.body.nickName,
+    email: req.session.email,
+    phone: req.session.phone,
+    password: req.body.password
+  });
+  // 保存用户账号
+  newUser.save((err) => {
+    if (err) {
+      if (err.name == 'BulkWriteError') {
+        return res.json({
+          success: false,
+          message: '手机号/邮箱已存在'
         });
       }
-      res.json({
-        success: true,
-        message: '成功创建新用户'
+      return res.json({
+        success: false,
+        message: '注册失败'
       });
-      // 注册完后清除session
-      req.session.destroy();
+    }
+    res.json({
+      success: true,
+      message: '成功创建新用户'
     });
-  }
+    // 注册完后清除session
+    req.session.destroy();
+  });
 });
 
 // 检查用户名与密码并生成一个accesstoken如果验证通过
@@ -282,10 +299,11 @@ router.post('/user/forget', (req, res) => {
 router.put('/user/verification', (req, res) => {
   // 邮箱验证
   if (req.body.email) {
-    // 设置session
-    req.session.verificationE = helper.getVerification(6);
     // 将email储存在session中
     req.session.email = req.body.email;
+    // 设置验证码
+    req.session.verificationE = helper.getVerification(6);
+    
     res.json({
       success: true,
       message: '已发送验证码'
@@ -296,13 +314,21 @@ router.put('/user/verification', (req, res) => {
   }
   // 手机验证
   else if (req.body.phone) {
-
+    // 将电话储存在session中
+    req.session.phone = req.body.phone;
+    // 设置验证码
+    helper.sendPhone(req.session.phone)
+    .then((msgId) => {
+      req.session.verificationP = msgId;
+      res.json({
+        success: true,
+        message: '已发送验证码'
+      })
+      req.session.save();
+    })
+    .catch(err=>console.log(err))
   }
 })
-
-
-
-
 
 // 新增地址
 router.post('/user/address',

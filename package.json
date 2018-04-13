@@ -9,6 +9,7 @@
   "author": "Nickj",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.18.0",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.15.2",
     "cookie-parser": "^1.4.3",
