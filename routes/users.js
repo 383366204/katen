@@ -37,16 +37,20 @@ router.post('/user/signup', (req, res, next) => {
     }
 
     else if (req.body.phone) {
-      helper.veriPhoneCode(req.session.verificationP,req.body.verification)
-      .then(success=>{
-        console.log('success');
-        if (success) {
-          next();
-        }
-      })
-      .catch(err=>{
-        console.log(err)
-      });
+      helper.veriPhoneCode(req.session.verificationP, req.body.verification)
+        .then(success => {
+          console.log('success');
+          if (success) {
+            next();
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          return res.json({
+            success: false,
+            message: '验证码错误'
+          });
+        });
     }
   }
 }, (req, res) => {
@@ -200,6 +204,23 @@ router.post('/user/info',
             next();
           }
         }
+        if (req.body.phone) {
+          helper.veriPhoneCode(req.session.verificationP, req.body.verification)
+            .then(success => {
+              console.log('success');
+              if (success) {
+                req.session.updateData.phone = req.session.phone;
+                next();
+              }
+            })
+            .catch(err => {
+              console.log(err);
+              return res.json({
+                success: false,
+                message: '验证码错误'
+              });
+            });
+        }
       })
     }
   }, (req, res) => {
@@ -274,25 +295,25 @@ router.post('/user/forget', (req, res) => {
   User.findOneAndUpdate(filter, {
     password: req.body.password
   }, {
-    new: true
-  }, (err, user, resp) => {
-    if (err) {
-      console.log(err);
-    }
-    if (!user) {
-      return res.json({
-        success: false,
-        message: '用户不存在'
-      });
-    } else if (user) {
-      // 消除session
-      req.session.destroy();
-      return res.json({
-        success: true,
-        message: '密码修改成功'
-      });
-    }
-  });
+      new: true
+    }, (err, user, resp) => {
+      if (err) {
+        console.log(err);
+      }
+      if (!user) {
+        return res.json({
+          success: false,
+          message: '用户不存在'
+        });
+      } else if (user) {
+        // 消除session
+        req.session.destroy();
+        return res.json({
+          success: true,
+          message: '密码修改成功'
+        });
+      }
+    });
 })
 
 // 获取验证码
@@ -303,7 +324,7 @@ router.put('/user/verification', (req, res) => {
     req.session.email = req.body.email;
     // 设置验证码
     req.session.verificationE = helper.getVerification(6);
-    
+
     res.json({
       success: true,
       message: '已发送验证码'
@@ -318,15 +339,15 @@ router.put('/user/verification', (req, res) => {
     req.session.phone = req.body.phone;
     // 设置验证码
     helper.sendPhone(req.session.phone)
-    .then((msgId) => {
-      req.session.verificationP = msgId;
-      res.json({
-        success: true,
-        message: '已发送验证码'
+      .then((msgId) => {
+        req.session.verificationP = msgId;
+        res.json({
+          success: true,
+          message: '已发送验证码'
+        })
+        req.session.save();
       })
-      req.session.save();
-    })
-    .catch(err=>console.log(err))
+      .catch(err => console.log(err))
   }
 })
 
@@ -351,14 +372,14 @@ router.post('/user/address',
       Address.update({
         user: req.user._id
       }, {
-        isDefault: false
-      }, {
-        multi: true
-      }, (err, raw) => {
-        if (err) {
-          console.log(err);
-        }
-      })
+          isDefault: false
+        }, {
+          multi: true
+        }, (err, raw) => {
+          if (err) {
+            console.log(err);
+          }
+        })
     }
     newAddress.save((err, address) => {
       if (err) {
@@ -402,16 +423,16 @@ router.delete('/user/address',
         Address.findOneAndUpdate({
           user: req.user._id
         }, {
-          isDefault: true
-        }, {
-          sort: {
-            '_id': -1
-          }
-        }, (err, doc, res) => {
-          if (err) {
-            console.log(err);
-          }
-        })
+            isDefault: true
+          }, {
+            sort: {
+              '_id': -1
+            }
+          }, (err, doc, res) => {
+            if (err) {
+              console.log(err);
+            }
+          })
       }
       res.json({
         success: true,
@@ -431,14 +452,14 @@ router.put('/user/address',
       Address.update({
         user: req.user._id
       }, {
-        isDefault: false
-      }, {
-        multi: true
-      }, (err, raw) => {
-        if (err) {
-          console.log(err);
-        }
-      })
+          isDefault: false
+        }, {
+          multi: true
+        }, (err, raw) => {
+          if (err) {
+            console.log(err);
+          }
+        })
     }
     Address.findByIdAndUpdate(req.body._id, req.body, {
       select: 'name region detail zipCode phone isDefault'
@@ -449,16 +470,16 @@ router.put('/user/address',
         Address.findOneAndUpdate({
           user: req.user._id
         }, {
-          isDefault: true
-        }, {
-          sort: {
-            '_id': -1
-          }
-        }, (err, doc, res) => {
-          if (err) {
-            console.log(err);
-          }
-        })
+            isDefault: true
+          }, {
+            sort: {
+              '_id': -1
+            }
+          }, (err, doc, res) => {
+            if (err) {
+              console.log(err);
+            }
+          })
       }
 
       if (err) {

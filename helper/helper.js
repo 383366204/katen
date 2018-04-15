@@ -57,8 +57,7 @@ function veriPhoneCode(msgId, verification) {
         })
         .catch((err) => {
             console.log('invalid');
-            console.log(err);
-            return Promise.reject(err);
+            return Promise.reject(err.response.data);
         });
 }
 
