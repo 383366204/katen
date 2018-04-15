@@ -1,7 +1,7 @@
 module.exports = {
   secret: 'sunnstars', // used when we create and verify JSON Web Tokens
   database: 'mongodb://localhost:27017/test', // 填写本地自己 mongodb 连接地址,xxx为数据表名
-  domain: 'http://127.0.0.1:8080',
+  domain: ['http://127.0.0.1:8080','http://localhost:8080','http://funky.iok.la'],
   emailConfig: {
     service: "qq",
     host: 'smtp.qq.com',
