@@ -1,2 +1,4 @@
 node_modules/
 md/
+static/static
+static/index.html
