@@ -551,13 +551,10 @@ router.post('/user/upgrade',
   });
 
 // 支付宝回调接口
-router.get('/alipay',
-  passport.authenticate('bearer', {
-    session: false
-  }),
-  function (req, res) {
-    console.log(req.body);
-  });
-
+router.post('/alipay',(req,res) => {
+  console.log(req);
+  // console.log(req.body);
+  res.send('success');
+})
 
 module.exports = router;
