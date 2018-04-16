@@ -1,6 +1,8 @@
 const nodemailer = require('nodemailer');
 const config = require('../config'); //引入配置文件
 const axios = require('axios');
+const Alipay = require('alipay-node-sdk');//支付宝sdk
+const path = require('path');
 
 function getVerification(length) {
     let code = "";
@@ -61,7 +63,33 @@ function veriPhoneCode(msgId, verification) {
         });
 }
 
+function payByAlipay(orderInfo) {
+    let outTradeId = Date.now().toString();
+    // 公共参数设置
+    let ali = new Alipay({
+        appId: config.alipay.app_id,
+        notifyUrl: config.alipay.notifyUrl,
+        rsaPrivate: path.resolve(__dirname+'/keys/sandbox_private.pem'),
+        rsaPublic: path.resolve(__dirname+'/keys/sandbox_ali_public.pem'),
+        sandbox: config.alipay.sandbox,
+        signType: config.alipay.signType
+    });
+    // 商品参数
+    let params = ali.pagePay({
+        subject: orderInfo.subject,
+        body: orderInfo.body,
+        outTradeId: outTradeId,
+        timeout: '10m',
+        amount: orderInfo.amount,
+        goodsType: 2,
+        qrPayMode: 2
+    });
+
+    return params;
+
+}
 exports.getVerification = getVerification;
 exports.sendEmail = sendEmail;
 exports.sendPhone = sendPhone;
 exports.veriPhoneCode = veriPhoneCode;
+exports.payByAlipay = payByAlipay;

@@ -10,6 +10,10 @@ const UserSchema = new Schema({
         type: Number,
         default: 1
     },
+    levelTime:{
+        type:Date,
+        default : Date.now
+    },
     email: {
         type: String,
         unique: true,

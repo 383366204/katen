@@ -34,9 +34,7 @@ router.post('/user/signup', (req, res, next) => {
       } else {
         next();
       }
-    }
-
-    else if (req.body.phone) {
+    } else if (req.body.phone) {
       helper.veriPhoneCode(req.session.verificationP, req.body.verification)
         .then(success => {
           console.log('success');
@@ -127,7 +125,8 @@ router.post('/user/signin', (req, res) => {
             nickName: user.nickName,
             level: user.level,
             email: user.email,
-            phone: user.phone
+            phone: user.phone,
+            levelTime: user.levelTime
           });
         } else {
           res.send({
@@ -154,7 +153,8 @@ router.get('/user/info',
       email: req.user.email,
       phone: req.user.phone,
       email: req.user.email,
-      address: req.user.address
+      address: req.user.address,
+      levelTime: req.user.levelTime
     });
   });
 
@@ -234,7 +234,7 @@ router.post('/user/info',
     }
     User.findByIdAndUpdate(req.user._id, req.session.updateData, {
       new: true,
-      select: '-_id level nickName email phone'
+      select: '-_id level nickName email phone levelTime'
     }, (err, user) => {
       if (err) {
         if (err.codeName == 'DuplicateKey') {
@@ -295,25 +295,25 @@ router.post('/user/forget', (req, res) => {
   User.findOneAndUpdate(filter, {
     password: req.body.password
   }, {
-      new: true
-    }, (err, user, resp) => {
-      if (err) {
-        console.log(err);
-      }
-      if (!user) {
-        return res.json({
-          success: false,
-          message: '用户不存在'
-        });
-      } else if (user) {
-        // 消除session
-        req.session.destroy();
-        return res.json({
-          success: true,
-          message: '密码修改成功'
-        });
-      }
-    });
+    new: true
+  }, (err, user, resp) => {
+    if (err) {
+      console.log(err);
+    }
+    if (!user) {
+      return res.json({
+        success: false,
+        message: '用户不存在'
+      });
+    } else if (user) {
+      // 消除session
+      req.session.destroy();
+      return res.json({
+        success: true,
+        message: '密码修改成功'
+      });
+    }
+  });
 })
 
 // 获取验证码
@@ -372,14 +372,14 @@ router.post('/user/address',
       Address.update({
         user: req.user._id
       }, {
-          isDefault: false
-        }, {
-          multi: true
-        }, (err, raw) => {
-          if (err) {
-            console.log(err);
-          }
-        })
+        isDefault: false
+      }, {
+        multi: true
+      }, (err, raw) => {
+        if (err) {
+          console.log(err);
+        }
+      })
     }
     newAddress.save((err, address) => {
       if (err) {
@@ -423,16 +423,16 @@ router.delete('/user/address',
         Address.findOneAndUpdate({
           user: req.user._id
         }, {
-            isDefault: true
-          }, {
-            sort: {
-              '_id': -1
-            }
-          }, (err, doc, res) => {
-            if (err) {
-              console.log(err);
-            }
-          })
+          isDefault: true
+        }, {
+          sort: {
+            '_id': -1
+          }
+        }, (err, doc, res) => {
+          if (err) {
+            console.log(err);
+          }
+        })
       }
       res.json({
         success: true,
@@ -452,14 +452,14 @@ router.put('/user/address',
       Address.update({
         user: req.user._id
       }, {
-          isDefault: false
-        }, {
-          multi: true
-        }, (err, raw) => {
-          if (err) {
-            console.log(err);
-          }
-        })
+        isDefault: false
+      }, {
+        multi: true
+      }, (err, raw) => {
+        if (err) {
+          console.log(err);
+        }
+      })
     }
     Address.findByIdAndUpdate(req.body._id, req.body, {
       select: 'name region detail zipCode phone isDefault'
@@ -470,16 +470,16 @@ router.put('/user/address',
         Address.findOneAndUpdate({
           user: req.user._id
         }, {
-            isDefault: true
-          }, {
-            sort: {
-              '_id': -1
-            }
-          }, (err, doc, res) => {
-            if (err) {
-              console.log(err);
-            }
-          })
+          isDefault: true
+        }, {
+          sort: {
+            '_id': -1
+          }
+        }, (err, doc, res) => {
+          if (err) {
+            console.log(err);
+          }
+        })
       }
 
       if (err) {
@@ -514,5 +514,50 @@ router.get('/user/address',
       }
     })
   });
+
+// 升级为超级会员
+router.post('/user/upgrade',
+  passport.authenticate('bearer', {
+    session: false
+  }),
+  function (req, res) {
+    let days = req.body.upgradeDays;
+    let levelTime = new Date(new Date(req.user.levelTime).valueOf() + days * 24 * 60 * 60 * 1000);
+
+    // 账单信息
+    let orderInfo = {};
+
+    //金额 
+    if (days == 30) {
+      orderInfo.amount = 20;
+    } else if (days == 180) {
+      orderInfo.amout = 90;
+    } else if (days == 360) {
+      orderInfo.amout = 120;
+    }
+    //主题
+    orderInfo.subject = '开田商城超级会员充值';
+    //副题
+    orderInfo.body = '购买' + days + '天超级会员'
+
+    // 支付宝支付
+    if (req.body.payOption == 0) {
+      res.json({
+        success: true,
+        params: helper.payByAlipay(orderInfo)
+      });
+    }
+
+  });
+
+// 支付宝回调接口
+router.get('/alipay',
+  passport.authenticate('bearer', {
+    session: false
+  }),
+  function (req, res) {
+    console.log(req.body);
+  });
+
 
 module.exports = router;
