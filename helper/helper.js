@@ -1,8 +1,10 @@
 const nodemailer = require('nodemailer');
 const config = require('../config'); //引入配置文件
 const axios = require('axios');
-const Alipay = require('alipay-node-sdk');//支付宝sdk
+const Alipay = require('alipay-node-sdk'); //支付宝sdk
 const path = require('path');
+const multer = require('multer'); //上传中间件
+const jwt = require('jsonwebtoken');
 
 function getVerification(length) {
     let code = "";
@@ -63,14 +65,26 @@ function veriPhoneCode(msgId, verification) {
         });
 }
 
+function getStorage() {
+    return multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, __dirname + '/../static/headPic/');
+        },
+        filename: function (req, file, cb) {
+            let hashNum = jwt.sign({id:req.user_id}, config.secret);
+            cb(null, `${hashNum}.png`)
+        }
+    })
+}
+
 function payByAlipay(orderInfo) {
     let outTradeId = Date.now().toString();
     // 公共参数设置
     let ali = new Alipay({
         appId: config.alipay.app_id,
         notifyUrl: config.alipay.notifyUrl,
-        rsaPrivate: path.resolve(__dirname+'/keys/sandbox_private.pem'),
-        rsaPublic: path.resolve(__dirname+'/keys/sandbox_ali_public.pem'),
+        rsaPrivate: path.resolve(__dirname + '/keys/sandbox_private.pem'),
+        rsaPublic: path.resolve(__dirname + '/keys/sandbox_ali_public.pem'),
         sandbox: config.alipay.sandbox,
         signType: config.alipay.signType
     });
@@ -85,7 +99,9 @@ function payByAlipay(orderInfo) {
         qrPayMode: 2
     });
 
-    return params;
+    let url = config.alipay.gateway + params;
+
+    return url;
 
 }
 exports.getVerification = getVerification;
@@ -93,3 +109,4 @@ exports.sendEmail = sendEmail;
 exports.sendPhone = sendPhone;
 exports.veriPhoneCode = veriPhoneCode;
 exports.payByAlipay = payByAlipay;
+exports.getStorage = getStorage;

@@ -18,6 +18,7 @@ module.exports = {
     app_id : '2016091500520178',
     notifyUrl: 'http://www.91funky.com/alipay',
     signType: 'RSA2',
-    sandbox: true
+    sandbox: true,
+    gateway:'https://openapi.alipaydev.com/gateway.do?'
   }
 };

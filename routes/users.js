@@ -6,6 +6,10 @@ const config = require('../config');
 const passport = require('passport');
 const helper = require('../helper/helper');
 const router = express.Router();
+const multer = require('multer'); //上传中间件
+const upload = multer({
+  storage: helper.getStorage()
+});
 
 require('../passport')(passport);
 
@@ -126,7 +130,8 @@ router.post('/user/signin', (req, res) => {
             level: user.level,
             email: user.email,
             phone: user.phone,
-            levelTime: user.levelTime
+            levelTime: user.levelTime,
+            headPicUrl:user.headPicUrl
           });
         } else {
           res.send({
@@ -154,7 +159,8 @@ router.get('/user/info',
       phone: req.user.phone,
       email: req.user.email,
       address: req.user.address,
-      levelTime: req.user.levelTime
+      levelTime: req.user.levelTime,
+      headPicUrl:req.user.headPicUrl
     });
   });
 
@@ -234,7 +240,7 @@ router.post('/user/info',
     }
     User.findByIdAndUpdate(req.user._id, req.session.updateData, {
       new: true,
-      select: '-_id level nickName email phone levelTime'
+      select: '-_id level nickName email phone levelTime headPicUrl'
     }, (err, user) => {
       if (err) {
         if (err.codeName == 'DuplicateKey') {
@@ -252,7 +258,9 @@ router.post('/user/info',
             nickName: user.nickName || '',
             email: user.email || '',
             phone: user.phone || '',
-            level: user.level || 1
+            level: user.level || 1,
+            levelTime: user.levelTime,
+            headPicUrl:user.headPicUrl
           }
         });
         // 清除session
@@ -544,14 +552,54 @@ router.post('/user/upgrade',
     if (req.body.payOption == 0) {
       res.json({
         success: true,
-        params: helper.payByAlipay(orderInfo)
+        url: helper.payByAlipay(orderInfo)
       });
     }
 
   });
 
+
+// 更改头像
+router.post('/user/headPic',
+  passport.authenticate('bearer', {
+    session: false
+  }),
+  upload.single('avatar'),
+  function (req, res) {
+
+    let hashNum = jwt.sign({id:req.user_id}, config.secret);
+
+    User.findByIdAndUpdate(req.user._id,{headPicUrl:'/headPic/' + hashNum + '.png'}, {
+      new: true,
+      select: '-_id level nickName email phone levelTime headPicUrl'
+    }, (err, user) => {
+      if (err) {
+        res.json({
+          success: false,
+          message: '更换头像失败'
+        });
+        console.log(err);
+      } else {
+        res.json({
+          success: true,
+          message: '更换头像成功',
+          user: {
+            nickName: user.nickName || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            level: user.level || 1,
+            levelTime: user.levelTime,
+            headPicUrl:user.headPicUrl
+          }
+        });
+        // 清除session
+        req.session.destroy();
+      }
+    });
+  });
+
 // 支付宝回调接口
-router.post('/alipay',(req,res) => {
+router.post('/alipay', (req, res) => {
   console.log(req);
   // console.log(req.body);
   res.send('success');

@@ -28,6 +28,10 @@ const UserSchema = new Schema({
         type: String,
         require: true
     },
+    headPicUrl:{
+        type:String,
+        default:'/headPic/default.png'
+    },
     token: {
         type: String
     }
