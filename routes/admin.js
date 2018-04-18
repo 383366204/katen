@@ -2,11 +2,11 @@ const express = require('express');
 const Admin = require('../models/admin');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const passport = require('passport');
+// const passport = require('passport');
 const helper = require('../helper/helper');
 const router = express.Router();
 
-require('../adminPass')(passport);
+// require('../adminPass')(passport);
 
 // 检查用户名与密码并生成一个accesstoken如果验证通过
 router.post('/signin', (req, res) => {

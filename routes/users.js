@@ -600,9 +600,9 @@ router.post('/user/headPic',
 
 // 支付宝回调接口
 router.post('/alipay', (req, res) => {
-  console.log(req);
-  // console.log(req.body);
-  res.send('success');
+  // console.log(req);
+  console.log(req.body);
+  // res.send('success');
 })
 
 module.exports = router;

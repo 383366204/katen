@@ -96,7 +96,8 @@ function payByAlipay(orderInfo) {
         timeout: '10m',
         amount: orderInfo.amount,
         goodsType: 2,
-        qrPayMode: 2
+        qrPayMode: 2,
+        return_url:'http://168h1b4258.imwork.net:48104/OrderSubmit'
     });
 
     let url = config.alipay.gateway + params;
