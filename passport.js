@@ -2,6 +2,7 @@ const passport = require('passport');
 const Strategy = require('passport-http-bearer').Strategy;
 
 const User = require('./models/user');
+const Admin = require('./models/admin')
 const config = require('./config');
 
 module.exports = function(passport) {
@@ -14,9 +15,23 @@ module.exports = function(passport) {
                     return done(err);
                 }
                 if (!user) {
-                    return done(null, false);
+                    Admin.findOne({
+                        token:token
+                    },function (err,admin) {
+                        if(err){
+                            return done(err)
+                        }
+                        if (!admin) {
+                            return done(null, false);
+                        }
+                        if (admin) {
+                            return done(null,admin);
+                        }
+                    })
                 }
-                return done(null, user);
+                else if(user){
+                    return done(null, user);
+                }
             });
         }
     ));

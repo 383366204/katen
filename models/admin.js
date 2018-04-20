@@ -12,6 +12,10 @@ const AdminSchema = new Schema({
         type: String,
         require: true
     },
+    level:{
+        type:Number,
+        default:1
+    },
     token: {
         type: String
     }
