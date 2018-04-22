@@ -36,11 +36,6 @@ const ProductSchema = new Schema({
         type:Number,
         require:true
     },
-    imgUrl:{
-        type:String,
-        require:true,
-        default:'/productPic/default.png'
-    },
     property:[{
         proName:{type:String,unique:true,sparse: true},
         proValue:{type:String}

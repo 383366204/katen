@@ -117,6 +117,15 @@ router.post('/user/signin', (req, res) => {
             expiresIn: 10080
           });
           user.token = token;
+
+          // 判读会员是否已过期
+          if (user.level==2) {
+            let levelTime = parseInt(Math.abs(new Date(user.levelTime)  - new Date())/ 1000 / 60 / 60 / 24);
+            if (levelTime<=0) {
+              user.level = 1;
+            }
+          }
+
           user.save(function (err) {
             if (err) {
               res.send(err);
@@ -152,8 +161,9 @@ router.get('/user/info',
     session: false
   }),
   function (req, res) {
-    console.log(req.user);
     res.json({
+      success: false,
+      message: '获取用户信息成功',
       nickName: req.user.nickName,
       email: req.user.email,
       phone: req.user.phone,
@@ -258,7 +268,7 @@ router.post('/user/info',
             nickName: user.nickName || '',
             email: user.email || '',
             phone: user.phone || '',
-            level: user.level || 1,
+            level: user.level,
             levelTime: user.levelTime,
             headPicUrl:user.headPicUrl
           }
@@ -529,11 +539,16 @@ router.post('/user/upgrade',
     session: false
   }),
   function (req, res) {
+  
     let days = req.body.upgradeDays;
     let levelTime = new Date(new Date(req.user.levelTime).valueOf() + days * 24 * 60 * 60 * 1000);
-
+    
     // 账单信息
     let orderInfo = {};
+    orderInfo.userId = req.user._id;
+    // orderType为1时是充值订单
+    orderInfo.orderType = 1;
+    orderInfo.levelTime = levelTime;
 
     //金额 
     if (days == 30) {
@@ -548,6 +563,7 @@ router.post('/user/upgrade',
     //副题
     orderInfo.body = '购买' + days + '天超级会员'
 
+    console.log(orderInfo);
     // 支付宝支付
     if (req.body.payOption == 0) {
       res.json({
@@ -587,7 +603,7 @@ router.post('/user/headPic',
             nickName: user.nickName || '',
             email: user.email || '',
             phone: user.phone || '',
-            level: user.level || 1,
+            level: user.level,
             levelTime: user.levelTime,
             headPicUrl:user.headPicUrl
           }
@@ -600,9 +616,24 @@ router.post('/user/headPic',
 
 // 支付宝回调接口
 router.post('/alipay', (req, res) => {
-  // console.log(req);
   console.log(req.body);
-  // res.send('success');
+  let orderInfo = JSON.parse(req.body.orderInfo);
+  // orderType为1时是充值订单
+  if (req.body.orderType==1) {
+    User.findByIdAndUpdate(orderInfo.userId,{level:2,levelTime:orderInfo.levelTime},(err,resp) => {
+      if (err) {
+        console.log(err);
+      }
+      else{
+        res.send('success');
+      }
+    })
+  }
+  // orderType为2时是商品订单
+  else if (req.body.orderType==2) {
+    
+  }
+  
 })
 
 module.exports = router;
