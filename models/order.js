@@ -14,9 +14,9 @@ const OrderSchema = new Schema({
         type: Schema.Types.ObjectId,
         require:true
     }],
-    type:{
-        type:Number,
-        default:0
+    address:{
+        type:Schema.Types.ObjectId,
+        required:true
     }
 });
 

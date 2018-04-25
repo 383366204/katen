@@ -12,12 +12,11 @@ const ProductSchema = new Schema({
     },
     name: {
         type: String,
-        require:true
+        require:true,
+        unique:true
     },
     tag: [{
-        type: String,
-        unique: true,
-        sparse: true
+        type: String
     }],
     size: {
         type: String
@@ -29,7 +28,7 @@ const ProductSchema = new Schema({
         type:String
     },
     weight:{
-        type:Number
+        type:String
     }
     ,
     price:{
@@ -37,10 +36,10 @@ const ProductSchema = new Schema({
         require:true
     },
     property:[{
-        proName:{type:String,unique:true,sparse: true},
+        proName:{type:String},
         proValue:{type:String}
     }],
-    salse:{
+    sales:{
         type:Number,
         default:0
     }
