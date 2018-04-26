@@ -5,6 +5,34 @@ const config = require('../config');
 const passport = require('passport');
 const helper = require('../helper/helper');
 const router = express.Router();
+const fs = require('fs');
+const multer = require('multer'); //上传中间件
+const upload = multer(
+  {
+    storage: multer.diskStorage({
+      destination: function (req, file, cb) {
+        // 若文件夹不存在则创建
+        fs.stat(__dirname + '/../static/productPic/'+req.body.name+'/',(err,stats) => {
+          // console.log(stats);
+          if (!stats) {
+            fs.mkdir(__dirname + '/../static/productPic/'+req.body.name,err=>{
+              if (err) {
+                console.log(err);
+              }
+              cb(null, __dirname + '/../static/productPic/'+req.body.name);
+            })
+          }else{
+            cb(null, __dirname + '/../static/productPic/'+req.body.name);
+          }
+        })
+      },
+      filename: function (req, file, cb) {
+          cb(null, file.originalname)
+      }
+    })
+  }
+);
+
 
 require('../passport')(passport);
 
@@ -12,7 +40,6 @@ require('../passport')(passport);
 router.post('/', passport.authenticate('bearer', {
   session: false
 }), (req, res) => {
-  console.log(req.body);
   var product = new Product({
     grand: req.body.grand,
     category: req.body.category,
@@ -28,7 +55,7 @@ router.post('/', passport.authenticate('bearer', {
   // 保存商品
   product.save((err) => {
     if (err) {
-      console.log(err);
+      // console.log(err);
       if (err.name == 'BulkWriteError') {
         return res.json({
           success: false,
@@ -47,5 +74,14 @@ router.post('/', passport.authenticate('bearer', {
   });
 })
 
+// 商品图片
+router.post('/img',upload.array('productImg',4), passport.authenticate('bearer', {
+  session: false
+}), (req, res) => {
+  res.json({
+    success: true,
+    message: '成功上传图片'
+  })
+})
 
 module.exports = router;
