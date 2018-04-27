@@ -33,8 +33,25 @@ const upload = multer(
   }
 );
 
-
 require('../passport')(passport);
+
+// 获取商品列表
+router.get('/',(req,res) => {
+  console.log(req.query);
+  Product.find().skip((req.query.currentPage-1)*req.query.limit).limit(parseInt(req.query.limit)).sort({'_id':-1}).select('-_id -__v').exec((err,resp) => {
+    if (err) {
+      console.log('err:'+err);
+    }
+    Product.count({},(err,count) => {
+      res.json({
+        success: true,
+        message: '商品查询成功',
+        product:resp,
+        total:count
+      })
+    })
+  })
+})
 
 // 新增商品
 router.post('/', passport.authenticate('bearer', {

@@ -25,10 +25,10 @@ const ProductSchema = new Schema({
         type: String
     },
     power:{
-        type:String
+        type:Number
     },
     weight:{
-        type:String
+        type:Number
     }
     ,
     price:{
