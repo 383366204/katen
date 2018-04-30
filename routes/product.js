@@ -38,9 +38,50 @@ require('../passport')(passport);
 // 获取商品列表
 router.get('/',(req,res) => {
   console.log(req.query);
-  Product.find().skip((req.query.currentPage-1)*req.query.limit).limit(parseInt(req.query.limit)).sort({'_id':-1}).select('-_id -__v').exec((err,resp) => {
+  let searchFilter = new RegExp(req.query.searchFilter,'i');
+  let filter= {};
+  
+  if (req.query.searchFilter) {
+    if (!req.query.selectFilter) {
+      filter = {
+        $or:[
+          {'grand':searchFilter},
+          {'category':searchFilter},
+          {'name':searchFilter},
+          {'tag':searchFilter},
+          {'property':searchFilter}
+        ]
+      }
+    }
+    else{
+      switch (req.query.selectFilter) {
+        case 'grand':
+          filter['grand'] = searchFilter;
+          break;
+        case 'category':
+          filter['category'] = searchFilter;
+          break;
+        case 'name':
+          filter['name'] = searchFilter;
+          break;
+        case 'tag':
+          filter['tag'] = searchFilter;
+          break;
+        case 'property':
+          filter['property'] = searchFilter;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  
+
+  console.log(filter);
+
+  Product.find(filter).skip((req.query.currentPage-1)*req.query.limit).limit(parseInt(req.query.limit)).sort({'_id':-1}).select('-_id -__v').exec((err,resp) => {
     if (err) {
-      console.log('err:'+err);
+      console.log('err: '+err);
     }
     Product.count({},(err,count) => {
       res.json({
