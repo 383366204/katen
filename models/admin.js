@@ -29,7 +29,7 @@ AdminSchema.pre('save', function (next) {
             if (err) {
                 return next(err);
             }
-            bcrypt.hash(admin.password, salt, function (err, hash) {
+            bcrypt.hash(admin.password, salt,null, function (err, hash) {
                 if (err) {
                     return next(err);
                 }

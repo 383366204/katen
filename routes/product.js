@@ -12,22 +12,22 @@ const upload = multer(
     storage: multer.diskStorage({
       destination: function (req, file, cb) {
         // 若文件夹不存在则创建
-        fs.stat(__dirname + '/../static/productPic/'+req.body.name+'/',(err,stats) => {
+        fs.stat(__dirname + '/../static/productPic/' + req.body.name + '/', (err, stats) => {
           // console.log(stats);
           if (!stats) {
-            fs.mkdir(__dirname + '/../static/productPic/'+req.body.name,err=>{
+            fs.mkdir(__dirname + '/../static/productPic/' + req.body.name, err => {
               if (err) {
                 console.log(err);
               }
-              cb(null, __dirname + '/../static/productPic/'+req.body.name);
+              cb(null, __dirname + '/../static/productPic/' + req.body.name);
             })
-          }else{
-            cb(null, __dirname + '/../static/productPic/'+req.body.name);
+          } else {
+            cb(null, __dirname + '/../static/productPic/' + req.body.name);
           }
         })
       },
       filename: function (req, file, cb) {
-          cb(null, file.originalname)
+        cb(null, file.originalname)
       }
     })
   }
@@ -36,24 +36,24 @@ const upload = multer(
 require('../passport')(passport);
 
 // 获取商品列表
-router.get('/',(req,res) => {
+router.get('/', (req, res) => {
   console.log(req.query);
-  let searchFilter = new RegExp(req.query.searchFilter,'i');
-  let filter= {};
-  
+  let searchFilter = new RegExp(req.query.searchFilter, 'i');
+  let filter = {};
+
   if (req.query.searchFilter) {
     if (!req.query.selectFilter) {
       filter = {
-        $or:[
-          {'grand':searchFilter},
-          {'category':searchFilter},
-          {'name':searchFilter},
-          {'tag':searchFilter},
-          {'property':searchFilter}
+        $or: [
+          { 'grand': searchFilter },
+          { 'category': searchFilter },
+          { 'name': searchFilter },
+          { 'tag': searchFilter },
+          { 'property.proValue': searchFilter }
         ]
       }
     }
-    else{
+    else {
       switch (req.query.selectFilter) {
         case 'grand':
           filter['grand'] = searchFilter;
@@ -68,27 +68,25 @@ router.get('/',(req,res) => {
           filter['tag'] = searchFilter;
           break;
         case 'property':
-          filter['property'] = searchFilter;
+          filter['property.proValue'] = searchFilter
+            ;
           break;
         default:
           break;
       }
     }
   }
-  
 
-  console.log(filter);
-
-  Product.find(filter).skip((req.query.currentPage-1)*req.query.limit).limit(parseInt(req.query.limit)).sort({'_id':-1}).select('-_id -__v').exec((err,resp) => {
+  Product.find(filter).skip((req.query.currentPage - 1) * req.query.limit).limit(parseInt(req.query.limit)).sort({ '_id': -1 }).select('-_id -__v').exec((err, resp) => {
     if (err) {
-      console.log('err: '+err);
+      console.log('err: ' + err);
     }
-    Product.count({},(err,count) => {
+    Product.count({}, (err, count) => {
       res.json({
         success: true,
         message: '商品查询成功',
-        product:resp,
-        total:count
+        product: resp,
+        total: count
       })
     })
   })
@@ -132,8 +130,25 @@ router.post('/', passport.authenticate('bearer', {
   });
 })
 
+// 删除商品
+router.delete('/', passport.authenticate('bearer', {
+  session: false
+}), (req, res) => {
+  Product.deleteOne({name:req.body.name},(err) => {
+    if (err) {
+      console.log(err);
+    }
+    else{
+      res.json({
+        success: true,
+        message: '成功删除商品' 
+      })
+    }
+  })
+})
+
 // 商品图片
-router.post('/img',upload.array('productImg',4), passport.authenticate('bearer', {
+router.post('/img', upload.array('productImg', 4), passport.authenticate('bearer', {
   session: false
 }), (req, res) => {
   res.json({
