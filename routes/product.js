@@ -147,7 +147,39 @@ router.delete('/', passport.authenticate('bearer', {
   })
 })
 
-// 商品图片
+// 获取商品图片
+router.get('/img', (req, res) => {
+  console.log(req.query);
+  Product.findOne({name:req.query.name},(err,resp) => {
+    if (err) {
+      console.log(err);
+    }
+    if (resp) {
+      fs.readdir('./static/productPic/'+req.query.name+'/',(err,files) => {
+        if (err) {
+          res.json({
+            success: false,
+            message: '商品没有上传图片',
+          })
+        }
+        else{
+          res.json({
+            success: true,
+            message: '成功获取商品图片',
+            fileList: files
+          })
+        }
+      })
+    }else{
+      res.json({
+        success: false,
+        message: '商品不存在',
+      })
+    }
+  })
+})
+
+// 上传商品图片
 router.post('/img', upload.array('productImg', 4), passport.authenticate('bearer', {
   session: false
 }), (req, res) => {

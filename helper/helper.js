@@ -5,6 +5,8 @@ const Alipay = require('alipay-node-sdk'); //支付宝sdk
 const path = require('path');
 const multer = require('multer'); //上传中间件
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const image = require('imageinfo');
 
 function getVerification(length) {
     let code = "";
@@ -31,9 +33,9 @@ function sendEmail(to, verificationCode) {
 
 function sendPhone(to) {
     return axios.post('https://api.sms.jpush.cn/v1/codes', {
-            mobile: to,
-            temp_id: 1
-        }, {
+        mobile: to,
+        temp_id: 1
+    }, {
             headers: {
                 'Authorization': 'Basic NDRjMDQ3YWRlNmRkMmZkZjUyZjhmOTY5OmExY2MzMDg4NGY0OWQwODQ1NGY4Yjc4Mw=='
             }
@@ -48,8 +50,8 @@ function sendPhone(to) {
 
 function veriPhoneCode(msgId, verification) {
     return axios.post(`https://api.sms.jpush.cn/v1/codes/${msgId}/valid`, {
-            code: verification
-        }, {
+        code: verification
+    }, {
             headers: {
                 'Authorization': 'Basic NDRjMDQ3YWRlNmRkMmZkZjUyZjhmOTY5OmExY2MzMDg4NGY0OWQwODQ1NGY4Yjc4Mw=='
             }
@@ -71,7 +73,7 @@ function getStorage() {
             cb(null, __dirname + '/../static/headPic/');
         },
         filename: function (req, file, cb) {
-            let hashNum = jwt.sign({id:req.user_id}, config.secret);
+            let hashNum = jwt.sign({ id: req.user_id }, config.secret);
             cb(null, `${hashNum}.png`)
         }
     })
@@ -97,8 +99,8 @@ function payByAlipay(orderInfo) {
         amount: orderInfo.amount,
         goodsType: 2,
         qrPayMode: 2,
-        return_url:'http://168h1b4258.imwork.net:48104/OrderSubmit',
-        passbackParams:encodeURI(JSON.stringify(orderInfo))
+        return_url: 'http://168h1b4258.imwork.net:48104/OrderSubmit',
+        passbackParams: encodeURI(JSON.stringify(orderInfo))
     });
 
     let url = config.alipay.gateway + params;
@@ -106,6 +108,7 @@ function payByAlipay(orderInfo) {
     return url;
 
 }
+
 exports.getVerification = getVerification;
 exports.sendEmail = sendEmail;
 exports.sendPhone = sendPhone;
