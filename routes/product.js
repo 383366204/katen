@@ -136,12 +136,61 @@ router.delete('/', passport.authenticate('bearer', {
 }), (req, res) => {
   Product.deleteOne({name:req.body.name},(err) => {
     if (err) {
-      console.log(err);
+      res.json({
+        success: true,
+        message: '删除商品失败' 
+      })
     }
     else{
       res.json({
         success: true,
         message: '成功删除商品' 
+      })
+    }
+  })
+})
+
+// 修改商品
+router.put('/', passport.authenticate('bearer', {
+  session: false
+}), (req, res) => {
+  let updateData = {
+    grand: req.body.grand,
+    category: req.body.category,
+    name: req.body.name,
+    tag: req.body.tag,
+    size: req.body.size,
+    packageSize: req.body.packageSize,
+    power: req.body.power,
+    weight: req.body.weight,
+    price: req.body.price,
+    property: req.body.property
+  }
+  Product.findOneAndUpdate({name:req.body.oldName},updateData, {
+    new: true,
+    select: '-_id grand category name tag size packageSize power weight price property sales'
+  },(err,product) => {
+    if (err) {
+      if (err.name == 'MongoError') {
+        res.json({
+          success: false,
+          message: '商品名称已存在'
+        });
+      }
+      console.log('err',err);
+    }
+    else{
+      if (req.body.oldName!=req.body.name) {
+        fs.rename('./static/productPic/'+req.body.oldName+'/','./static/productPic/'+req.body.name+'/',(err) => {
+          if (err) {
+            console.log(err);
+          }
+        })
+      }
+      res.json({
+        success:true,
+        message:'商品更新成功',
+        product:product
       })
     }
   })
@@ -186,6 +235,26 @@ router.post('/img', upload.array('productImg', 4), passport.authenticate('bearer
   res.json({
     success: true,
     message: '成功上传图片'
+  })
+})
+
+// 删除商品图片
+router.delete('/img', passport.authenticate('bearer', {
+  session: false
+}), (req, res) => {
+  fs.unlink('./static/productPic/'+req.body.name+'/'+req.body.fileName,(err) => {
+    if (err) {
+      res.json({
+        success: false,
+        message: '删除图片失败'
+      })
+    }
+    else{
+      res.json({
+        success: true,
+        message: '成功删除图片'
+      })
+    }
   })
 })
 

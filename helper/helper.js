@@ -6,7 +6,6 @@ const path = require('path');
 const multer = require('multer'); //上传中间件
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
-const image = require('imageinfo');
 
 function getVerification(length) {
     let code = "";
