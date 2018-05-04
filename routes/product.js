@@ -81,7 +81,7 @@ router.get('/', (req, res) => {
     if (err) {
       console.log('err: ' + err);
     }
-    Product.count({}, (err, count) => {
+    Product.count(filter, (err, count) => {
       res.json({
         success: true,
         message: '商品查询成功',
