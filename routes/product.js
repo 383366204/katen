@@ -7,23 +7,25 @@ const helper = require('../helper/helper');
 const router = express.Router();
 const fs = require('fs');
 const multer = require('multer'); //上传中间件
+const path = require('path');
+const util = require('util');
+const stat = util.promisify(fs.stat);
 const upload = multer(
   {
     storage: multer.diskStorage({
       destination: function (req, file, cb) {
         // 若文件夹不存在则创建
-        fs.stat(__dirname + '/../static/productPic/' + req.body.name + '/', (err, stats) => {
-          // console.log(stats);
-          if (!stats) {
-            fs.mkdir(__dirname + '/../static/productPic/' + req.body.name, err => {
-              if (err) {
-                console.log(err);
-              }
-              cb(null, __dirname + '/../static/productPic/' + req.body.name);
-            })
-          } else {
+        stat(__dirname + '/../static/productPic/' + req.body.name + '/')
+        .then(response=>{
+          cb(null, __dirname + '/../static/productPic/' + req.body.name);
+        })
+        .catch(err=>{
+          fs.mkdir(__dirname + '/../static/productPic/' + req.body.name, err => {
+            if (err) {
+              console.log(err);
+            }
             cb(null, __dirname + '/../static/productPic/' + req.body.name);
-          }
+          })
         })
       },
       filename: function (req, file, cb) {
@@ -137,14 +139,29 @@ router.delete('/', passport.authenticate('bearer', {
   Product.deleteOne({name:req.body.name},(err) => {
     if (err) {
       res.json({
-        success: true,
+        success: false,
         message: '删除商品失败' 
       })
     }
     else{
+      let directory = './static/productPic/'+req.body.name+'/'
+      // 商品删除的同时把图片也删除
+      fs.readdir(directory, (err, files) => {
+        if (err) {
+          console.log(err);
+        }
+        else{
+          for (const file of files) {
+            fs.unlink(path.join(directory, file), err => {
+              if (err) throw err;
+            });
+          }
+        }
+      });
+
       res.json({
         success: true,
-        message: '成功删除商品' 
+        message: '删除商品成功' 
       })
     }
   })

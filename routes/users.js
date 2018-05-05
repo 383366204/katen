@@ -253,7 +253,7 @@ router.post('/user/info',
       select: '-_id level nickName email phone levelTime headPicUrl'
     }, (err, user) => {
       if (err) {
-        if (err.codeName == 'DuplicateKey') {
+        if (err.name == 'MongoError') {
           res.json({
             success: false,
             message: '手机号/邮箱已存在'

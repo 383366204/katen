@@ -66,7 +66,7 @@ UserSchema.pre('findOneAndUpdate', function (next) {
             if (err) {
                 return next(err);
             }
-            bcrypt.hash(user._update.password, salt, function (err, hash) {
+            bcrypt.hash(user._update.password, salt,null, function (err, hash) {
                 if (err) {
                     return next(err);
                 }
