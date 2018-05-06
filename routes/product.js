@@ -94,6 +94,21 @@ router.get('/', (req, res) => {
   })
 })
 
+// 获取单个商品
+router.get('/detail', (req, res) => {
+  Product.findOne({name:req.query.name}).select('-_id -__v -grand -category').exec((err,resp) => {
+    if (err) {
+      console.log(err);
+    }else{
+      res.json({
+        success: true,
+        message: '商品查询成功',
+        product: resp
+      })
+    }
+  })
+})
+
 // 新增商品
 router.post('/', passport.authenticate('bearer', {
   session: false
