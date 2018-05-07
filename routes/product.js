@@ -96,7 +96,7 @@ router.get('/', (req, res) => {
 
 // 获取单个商品
 router.get('/detail', (req, res) => {
-  Product.findOne({name:req.query.name}).select('-_id -__v -grand -category').exec((err,resp) => {
+  Product.findOne({name:req.query.name}).select('-_id -__v').exec((err,resp) => {
     if (err) {
       console.log(err);
     }else{
