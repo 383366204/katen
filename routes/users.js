@@ -479,10 +479,19 @@ router.put('/user/address',
         }
       })
     }
-    Address.findByIdAndUpdate(req.body._id, req.body, {
+
+    let updateData = {
+      name: req.body.name,
+      region: req.body.region,
+      detail: req.body.detail,
+      zipCode: req.body.zipCode,
+      phone: req.body.phone,
+      isDefault: req.body.isDefault,
+    }
+
+    Address.findByIdAndUpdate(req.body._id, updateData, {
       select: 'name region detail zipCode phone isDefault'
     }, (err, address) => {
-      console.log(address);
       //  若将默认地址改为非默认地址，将最新一条设为默认
       if (address.isDefault == true && req.body.isDefault == false) {
         Address.findOneAndUpdate({
