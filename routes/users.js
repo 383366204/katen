@@ -488,8 +488,10 @@ router.put('/user/address',
       phone: req.body.phone,
       isDefault: req.body.isDefault,
     }
+    console.log(req.body);
+    console.log(updateData);
 
-    Address.findByIdAndUpdate(req.body._id, updateData, {
+    Address.findByIdAndUpdate(req.body._id, {$set:updateData}, {
       select: 'name region detail zipCode phone isDefault'
     }, (err, address) => {
       //  若将默认地址改为非默认地址，将最新一条设为默认
