@@ -9,9 +9,11 @@ const routes = require('./routes');
 const config = require('./config');
 const cors = require('cors');//跨域
 const session = require('express-session');//session
+const history = require('connect-history-api-fallback');
 
 let port = process.env.PORT || 4040;
 
+app.use(history());
 app.use(morgan('dev'));// 命令行中显示程序运行日志,便于bug调试
 
 let corsOptions = {
