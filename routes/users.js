@@ -119,9 +119,9 @@ router.post('/user/signin', (req, res) => {
           user.token = token;
 
           // 判读会员是否已过期
-          if (user.level==2) {
-            let levelTime = parseInt(Math.abs(new Date(user.levelTime)  - new Date())/ 1000 / 60 / 60 / 24);
-            if (levelTime<=0) {
+          if (user.level == 2) {
+            let levelTime = parseInt(Math.abs(new Date(user.levelTime) - new Date()) / 1000 / 60 / 60 / 24);
+            if (levelTime <= 0) {
               user.level = 1;
             }
           }
@@ -140,7 +140,7 @@ router.post('/user/signin', (req, res) => {
             email: user.email,
             phone: user.phone,
             levelTime: user.levelTime,
-            headPicUrl:user.headPicUrl
+            headPicUrl: user.headPicUrl
           });
         } else {
           res.send({
@@ -170,7 +170,7 @@ router.get('/user/info',
       email: req.user.email,
       address: req.user.address,
       levelTime: req.user.levelTime,
-      headPicUrl:req.user.headPicUrl
+      headPicUrl: req.user.headPicUrl
     });
   });
 
@@ -270,7 +270,7 @@ router.post('/user/info',
             phone: user.phone || '',
             level: user.level,
             levelTime: user.levelTime,
-            headPicUrl:user.headPicUrl
+            headPicUrl: user.headPicUrl
           }
         });
         // 清除session
@@ -464,7 +464,7 @@ router.put('/user/address',
   passport.authenticate('bearer', {
     session: false
   }),
-  function (req, res) {
+  function (req, res, next) {
     // 若是put过来的设为默认地址，则将数据库里其他地址设为非默认
     if (req.body.isDefault) {
       Address.update({
@@ -476,10 +476,12 @@ router.put('/user/address',
       }, (err, raw) => {
         if (err) {
           console.log(err);
+        } else {
+          next();
         }
       })
     }
-
+  }, (req, res) => {
     let updateData = {
       name: req.body.name,
       region: req.body.region,
@@ -488,10 +490,10 @@ router.put('/user/address',
       phone: req.body.phone,
       isDefault: req.body.isDefault,
     }
-    console.log(req.body);
-    console.log(updateData);
 
-    Address.findByIdAndUpdate(req.body._id, {$set:updateData}, {
+    Address.findByIdAndUpdate(req.body._id, {
+      $set: updateData
+    }, {
       select: 'name region detail zipCode phone isDefault'
     }, (err, address) => {
       //  若将默认地址改为非默认地址，将最新一条设为默认
@@ -550,10 +552,10 @@ router.post('/user/upgrade',
     session: false
   }),
   function (req, res) {
-  
+
     let days = req.body.upgradeDays;
     let levelTime = new Date(new Date(req.user.levelTime).valueOf() + days * 24 * 60 * 60 * 1000);
-    
+
     // 账单信息
     let orderInfo = {};
     orderInfo.userId = req.user._id;
@@ -594,9 +596,13 @@ router.post('/user/headPic',
   upload.single('avatar'),
   function (req, res) {
 
-    let hashNum = jwt.sign({id:req.user_id}, config.secret);
+    let hashNum = jwt.sign({
+      id: req.user_id
+    }, config.secret);
 
-    User.findByIdAndUpdate(req.user._id,{headPicUrl:'/headPic/' + hashNum + '.png'}, {
+    User.findByIdAndUpdate(req.user._id, {
+      headPicUrl: '/headPic/' + hashNum + '.png'
+    }, {
       new: true,
       select: '-_id level nickName email phone levelTime headPicUrl'
     }, (err, user) => {
@@ -616,7 +622,7 @@ router.post('/user/headPic',
             phone: user.phone || '',
             level: user.level,
             levelTime: user.levelTime,
-            headPicUrl:user.headPicUrl
+            headPicUrl: user.headPicUrl
           }
         });
         // 清除session
@@ -630,21 +636,23 @@ router.post('/alipay', (req, res) => {
   console.log(req.body);
   let orderInfo = JSON.parse(req.body.orderInfo);
   // orderType为1时是充值订单
-  if (req.body.orderType==1) {
-    User.findByIdAndUpdate(orderInfo.userId,{level:2,levelTime:orderInfo.levelTime},(err,resp) => {
+  if (req.body.orderType == 1) {
+    User.findByIdAndUpdate(orderInfo.userId, {
+      level: 2,
+      levelTime: orderInfo.levelTime
+    }, (err, resp) => {
       if (err) {
         console.log(err);
-      }
-      else{
+      } else {
         res.send('success');
       }
     })
   }
   // orderType为2时是商品订单
-  else if (req.body.orderType==2) {
-    
+  else if (req.body.orderType == 2) {
+
   }
-  
+
 })
 
 module.exports = router;
