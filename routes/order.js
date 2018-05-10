@@ -9,38 +9,41 @@ const fs = require('fs');
 const util = require('util');
 require('../passport')(passport);
 
-// 获取订单
+// 用户获取订单
 router.get('/', passport.authenticate('bearer', {
     session: false
 }), (req, res) => {
 
     let filter = {
-        user:req.user._id
+        user: req.user._id
     };
     // 如果有带status就在参数里加上
-    if (req.body.status) {
-        filter.status = req.body.status
+    if (req.query.status) {
+        filter.status = req.query.status
     }
 
 
     Order.find(filter).skip((req.query.currentPage - 1) * req.query.limit).limit(parseInt(req.query.limit))
-    .select('-__v -products._id').populate('address products.product','-_id -_v').exec((err, resp) => {
-        if (err) {
-            console.log('err: ' + err);
-            res.json({
-                success: false,
-                message: '订单查询失败'
-            });
-        }
-        else{
-            
-            res.json({
-                success: true,
-                message: '订单查询成功',
-                order: resp
-            })
-        }
-    })
+        .sort({
+            '_id': -1
+        }).select('-__v -products._id').populate('address products.product', '-_id -_v').exec((err, resp) => {
+            if (err) {
+                console.log('err: ' + err);
+                res.json({
+                    success: false,
+                    message: '订单查询失败'
+                });
+            } else {
+                Order.count(filter, (err, count) => {
+                    res.json({
+                        success: true,
+                        message: '商品查询成功',
+                        order: resp,
+                        total: count
+                    })
+                })
+            }
+        })
 })
 
 // 新增订单
@@ -63,8 +66,7 @@ router.post('/', passport.authenticate('bearer', {
                 success: false,
                 message: '订单提交失败'
             });
-        }
-        else{
+        } else {
             res.json({
                 success: true,
                 message: '订单提交成功'
@@ -77,35 +79,21 @@ router.post('/', passport.authenticate('bearer', {
 router.delete('/', passport.authenticate('bearer', {
     session: false
 }), (req, res) => {
-    Product.deleteOne({
-        name: req.body.name
-    }, (err) => {
+    Order.findOneAndRemove({_id:req.body._id,user:req.user.id},(err,resp) => {
         if (err) {
+            console.log(err);
             res.json({
-                success: false,
-                message: '删除商品失败'
+                success:false,
+                message: '订单删除失败'
             })
         } else {
-            let directory = './static/productPic/' + req.body.name + '/'
-            // 商品删除的同时把图片也删除
-            fs.readdir(directory, (err, files) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    for (const file of files) {
-                        fs.unlink(path.join(directory, file), err => {
-                            if (err) throw err;
-                        });
-                    }
-                }
-            });
-
             res.json({
-                success: true,
-                message: '删除商品成功'
+                success:true,
+                message:'订单删除成功'
             })
         }
     })
+
 })
 
 // 修改订单
@@ -154,5 +142,43 @@ router.put('/', passport.authenticate('bearer', {
         }
     })
 })
+
+// 管理员获取订单
+router.get('/admin', passport.authenticate('bearer', {
+    session: false
+}), (req, res) => {
+
+    let filter = {
+        // user: req.user._id
+    };
+    // 如果有带status就在参数里加上
+    // if (req.query.status) {
+    //     filter.status = req.query.status
+    // }
+
+
+    Order.find(filter).skip((req.query.currentPage - 1) * req.query.limit).limit(parseInt(req.query.limit))
+        .sort({
+            '_id': -1
+        }).select('-__v -products._id').populate('address products.product', '-_id -_v').exec((err, resp) => {
+            if (err) {
+                console.log('err: ' + err);
+                res.json({
+                    success: false,
+                    message: '订单查询失败'
+                });
+            } else {
+                Order.count(filter, (err, count) => {
+                    res.json({
+                        success: true,
+                        message: '商品查询成功',
+                        order: resp,
+                        total: count
+                    })
+                })
+            }
+        })
+})
+
 
 module.exports = router;
