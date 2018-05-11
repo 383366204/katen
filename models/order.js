@@ -4,7 +4,8 @@ const Schema = mongoose.Schema;
 const OrderSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
-        require:true
+        require:true,
+        ref:'User'
     },
     // status代表商品状态 1:待付款 2:待发货 3:待收货 :已完成 
     status:{
