@@ -98,7 +98,7 @@ function payByAlipay(orderInfo) {
         amount: orderInfo.amount,
         goodsType: 2,
         qrPayMode: 2,
-        return_url: 'http://168h1b4258.imwork.net:48104/OrderSubmit',
+        return_url: config.alipay.upgrade_return_url,
         passbackParams: encodeURI(JSON.stringify(orderInfo))
     });
 

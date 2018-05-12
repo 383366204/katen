@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/user');
 const Address = require('../models/address');
+const Order = require('../models/order');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const passport = require('passport');
@@ -162,13 +163,14 @@ router.get('/user/info',
   }),
   function (req, res) {
     res.json({
-      success: false,
+      success: true,
       message: '获取用户信息成功',
       nickName: req.user.nickName,
       email: req.user.email,
       phone: req.user.phone,
       email: req.user.email,
       address: req.user.address,
+      level:req.user.level,
       levelTime: req.user.levelTime,
       headPicUrl: req.user.headPicUrl
     });
@@ -567,16 +569,15 @@ router.post('/user/upgrade',
     if (days == 30) {
       orderInfo.amount = 20;
     } else if (days == 180) {
-      orderInfo.amout = 90;
+      orderInfo.amount = 90;
     } else if (days == 360) {
-      orderInfo.amout = 120;
+      orderInfo.amount = 120;
     }
     //主题
     orderInfo.subject = '开田商城超级会员充值';
     //副题
     orderInfo.body = '购买' + days + '天超级会员'
 
-    console.log(orderInfo);
     // 支付宝支付
     if (req.body.payOption == 0) {
       res.json({
@@ -633,10 +634,9 @@ router.post('/user/headPic',
 
 // 支付宝回调接口
 router.post('/alipay', (req, res) => {
-  console.log(req.body);
-  let orderInfo = JSON.parse(req.body.orderInfo);
+  let orderInfo = JSON.parse(decodeURI(req.body.passback_params));
   // orderType为1时是充值订单
-  if (req.body.orderType == 1) {
+  if (orderInfo.orderType == 1) {
     User.findByIdAndUpdate(orderInfo.userId, {
       level: 2,
       levelTime: orderInfo.levelTime
@@ -649,8 +649,14 @@ router.post('/alipay', (req, res) => {
     })
   }
   // orderType为2时是商品订单
-  else if (req.body.orderType == 2) {
-
+  else if (orderInfo.orderType == 2) {
+    Order.findByIdAndUpdate(orderInfo._id,{status:2},(err,resp) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send('success');
+      }
+    })
   }
 
 })

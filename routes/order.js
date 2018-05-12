@@ -51,7 +51,6 @@ router.get('/', passport.authenticate('bearer', {
 router.post('/', passport.authenticate('bearer', {
     session: false
 }), (req, res) => {
-    console.log(req.body);
     var order = new Order({
         user: req.user._id,
         price: req.body.price,
@@ -60,7 +59,8 @@ router.post('/', passport.authenticate('bearer', {
         message: req.body.message
     });
     // 保存商品
-    order.save((err) => {
+    order.save((err,order) => {
+        console.log(order);
         if (err) {
             console.log(err);
             res.json({
@@ -68,10 +68,22 @@ router.post('/', passport.authenticate('bearer', {
                 message: '订单提交失败'
             });
         } else {
+            let orderInfo = {};
+            orderInfo._id = order._id;
+            // orderType为2时是购买订单
+            orderInfo.orderType = 2;
+            orderInfo.amount = order.price;
+            //主题
+            orderInfo.subject = '开田商城购买订单';
+            //副题
+            orderInfo.body = '购买商品'
+            console.log(orderInfo);
             res.json({
                 success: true,
-                message: '订单提交成功'
+                message: '订单提交成功',
+                url:helper.payByAlipay(orderInfo)
             });
+
         }
     });
 })
