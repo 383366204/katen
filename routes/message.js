@@ -1,9 +1,6 @@
 const express = require('express');
 const Message = require('../models/message');
-const jwt = require('jsonwebtoken');
-const config = require('../config');
 const passport = require('passport');
-const helper = require('../helper/helper');
 const router = express.Router();
 
 

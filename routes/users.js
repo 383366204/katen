@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/user');
 const Address = require('../models/address');
+const Inform = require('../models/inform');
 const Order = require('../models/order');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
@@ -57,14 +58,14 @@ router.post('/user/signup', (req, res, next) => {
     }
   }
 }, (req, res) => {
-  var newUser = new User({
+  let newUser = new User({
     nickName: req.body.nickName,
     email: req.session.email,
     phone: req.session.phone,
     password: req.body.password
   });
   // 保存用户账号
-  newUser.save((err) => {
+  newUser.save((err,user) => {
     if (err) {
       if (err.name == 'BulkWriteError') {
         return res.json({
@@ -76,11 +77,23 @@ router.post('/user/signup', (req, res, next) => {
         success: false,
         message: '注册失败'
       });
+    }else{
+      res.json({
+        success: true,
+        message: '成功创建新用户'
+      });
+      // 注册成功后增加一条通知
+      let inform = new Inform({
+        user:user._id,
+        msgTitle:'账号注册成功',
+        msgContent:'您好，欢迎您注册本商城的账号'
+      })
+      inform.save((err) => {
+        if (err) {
+          console.log(err);
+        }
+      })
     }
-    res.json({
-      success: true,
-      message: '成功创建新用户'
-    });
     // 注册完后清除session
     req.session.destroy();
   });
@@ -635,6 +648,8 @@ router.post('/user/headPic',
 // 支付宝回调接口
 router.post('/alipay', (req, res) => {
   let orderInfo = JSON.parse(decodeURI(req.body.passback_params));
+  console.log(orderInfo);
+
   // orderType为1时是充值订单
   if (orderInfo.orderType == 1) {
     User.findByIdAndUpdate(orderInfo.userId, {
@@ -648,12 +663,27 @@ router.post('/alipay', (req, res) => {
       }
     })
   }
+
   // orderType为2时是商品订单
   else if (orderInfo.orderType == 2) {
     Order.findByIdAndUpdate(orderInfo._id,{status:2},(err,resp) => {
       if (err) {
         console.log(err);
       } else {
+
+         // 付款成功后增加一条通知
+         let inform = new Inform({
+            user: orderInfo.user,
+            msgTitle: '订单提交成功',
+            msgContent: '您好，您的订单'+ orderInfo._id +'已经提交成功'
+          });
+
+          inform.save((err) => {
+              if (err) {
+                  console.log(err);
+              }
+          })
+
         res.send('success');
       }
     })

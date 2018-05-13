@@ -4,7 +4,8 @@ const Schema = mongoose.Schema;
 const InformSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
-        require:true
+        require:true,
+        ref:'User'
     },
     msgTitle:{
         type:String,
