@@ -2,6 +2,7 @@ const express = require('express');
 const Order = require('../models/order');
 const User = require('../models/user');
 const Inform = require('../models/inform');
+const Product = require('../models/product');
 const passport = require('passport');
 const helper = require('../helper/helper');
 const router = express.Router();
@@ -169,6 +170,15 @@ router.put('/', passport.authenticate('bearer', {
                     success: true,
                     message: '确认收货成功'
                 })
+
+                order.products.forEach((value,index) => {
+                    Product.findByIdAndUpdate(value.product,{$inc:{sales:value.num}},(err,resp) => {
+                        if (err) {
+                            console.log(err);
+                        }
+                    });
+                })
+                
                 // '确认收货成功后增加一条通知
                 let inform = new Inform({
                     user: req.user._id,
