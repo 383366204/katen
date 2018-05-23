@@ -14,6 +14,20 @@ function getVerification(length) {
     }
     return code;
 }
+function sendNotify(order) {
+    let transporter = nodemailer.createTransport(config.emailConfig);
+    let mailOptions = {
+        from: config.emailSign,
+        to: config.notifyEmail,
+        subject: '订单发货提醒',
+        text: `订单号：${order._id}\n付款金额：${order.price}\n收货地址：${order.address.region.split('/').join(' ')} ${order.address.detail}\n收货人：${order.address.name}\n联系电话：${order.address.phone}\n商品：\n${order.products.map(product=>(product.product.grand+product.product.category+product.product.name+' 数量：'+product.num)).join('\n')}\n留言：${order.message||'无'}`
+    }
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            return console.log(err);
+        }
+    })
+}
 
 function sendEmail(to, verificationCode) {
     let transporter = nodemailer.createTransport(config.emailConfig);
@@ -114,3 +128,4 @@ exports.sendPhone = sendPhone;
 exports.veriPhoneCode = veriPhoneCode;
 exports.payByAlipay = payByAlipay;
 exports.getStorage = getStorage;
+exports.sendNotify = sendNotify;
