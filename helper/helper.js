@@ -14,6 +14,7 @@ function getVerification(length) {
     }
     return code;
 }
+
 function sendNotify(order) {
     let transporter = nodemailer.createTransport(config.emailConfig);
     let mailOptions = {
@@ -28,6 +29,25 @@ function sendNotify(order) {
         }
     })
 }
+
+// function sendNotifyToCustomer(order) {
+//     return axios.post('https://api.sms.jpush.cn/v1/codes', {
+//             mobile: order.address.phone,
+//             temp_id: 1
+//         }, {
+//             headers: {
+//                 'Authorization': 'Basic NDRjMDQ3YWRlNmRkMmZkZjUyZjhmOTY5OmExY2MzMDg4NGY0OWQwODQ1NGY4Yjc4Mw=='
+//             }
+//         })
+//         .then(response => {
+//             console.log(order);
+//             return Promise.resolve(`您的订单已发货\n订单号：${order._id}\n付款金额：${order.price}\n收货地址：${order.address.region.split('/').join(' ')} ${order.address.detail}\n收货人：${order.address.name}\n联系电话：${order.address.phone}\n商品：\n${order.products.map(product=>(product.product.grand+product.product.category+product.product.name+' 数量：'+product.num)).join('\n')}\n留言：${order.message||'无'}`);
+//         })
+//         .catch(err => {
+//             return Promise.reject(err.response)
+//         });
+
+// }
 
 function sendEmail(to, verificationCode) {
     let transporter = nodemailer.createTransport(config.emailConfig);
@@ -46,9 +66,9 @@ function sendEmail(to, verificationCode) {
 
 function sendPhone(to) {
     return axios.post('https://api.sms.jpush.cn/v1/codes', {
-        mobile: to,
-        temp_id: 1
-    }, {
+            mobile: to,
+            temp_id: 1
+        }, {
             headers: {
                 'Authorization': 'Basic NDRjMDQ3YWRlNmRkMmZkZjUyZjhmOTY5OmExY2MzMDg4NGY0OWQwODQ1NGY4Yjc4Mw=='
             }
@@ -63,8 +83,8 @@ function sendPhone(to) {
 
 function veriPhoneCode(msgId, verification) {
     return axios.post(`https://api.sms.jpush.cn/v1/codes/${msgId}/valid`, {
-        code: verification
-    }, {
+            code: verification
+        }, {
             headers: {
                 'Authorization': 'Basic NDRjMDQ3YWRlNmRkMmZkZjUyZjhmOTY5OmExY2MzMDg4NGY0OWQwODQ1NGY4Yjc4Mw=='
             }
@@ -86,7 +106,9 @@ function getStorage() {
             cb(null, __dirname + '/../static/headPic/');
         },
         filename: function (req, file, cb) {
-            let hashNum = jwt.sign({ id: req.user_id }, config.secret);
+            let hashNum = jwt.sign({
+                id: req.user_id
+            }, config.secret);
             cb(null, `${hashNum}.png`)
         }
     })
@@ -129,3 +151,4 @@ exports.veriPhoneCode = veriPhoneCode;
 exports.payByAlipay = payByAlipay;
 exports.getStorage = getStorage;
 exports.sendNotify = sendNotify;
+// exports.sendNotifyToCustomer = sendNotifyToCustomer;

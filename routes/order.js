@@ -3,6 +3,7 @@ const Order = require('../models/order');
 const User = require('../models/user');
 const Inform = require('../models/inform');
 const Product = require('../models/product');
+const Address = require('../models/address');
 const passport = require('passport');
 const helper = require('../helper/helper');
 const router = express.Router();
@@ -142,13 +143,11 @@ router.post('/notify', passport.authenticate('bearer', {
             })
         }
         else {
-            console.log(resp);
             helper.sendNotify(resp);
             return res.json({
                 success: true,
                 message: '提醒发货成功'
             });
-
         }
     })
 })
@@ -321,6 +320,7 @@ router.put('/admin', passport.authenticate('bearer', {
         if (err) {
             console.log('err', err);
         } else {
+
             res.json({
                 success: true,
                 message: '发货成功'
@@ -338,6 +338,12 @@ router.put('/admin', passport.authenticate('bearer', {
                     console.log(err);
                 }
             })
+            
+            // Address.findById(order.address,(err,resp) => {
+            //     // 发货通知
+            //     order.address = resp;
+            //     helper.sendNotifyToCustomer(order);
+            // })
         }
     })
 })

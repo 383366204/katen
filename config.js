@@ -17,7 +17,7 @@ module.exports = {
   notifyEmail:'qq383366204@gmail.com',
   alipay:{
     app_id : '2016091500520178',
-    notifyUrl: 'http://funky.iok.la/api/alipay',
+    notifyUrl: 'http://www.91funky.com/api/alipay',
     signType: 'RSA2',
     sandbox: true,
     gateway:'https://openapi.alipaydev.com/gateway.do?',
