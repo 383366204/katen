@@ -2,6 +2,8 @@ const express = require('express');
 const Order = require('../models/order');
 const User = require('../models/user');
 const Inform = require('../models/inform');
+const Product = require('../models/product');
+const Address = require('../models/address');
 const passport = require('passport');
 const helper = require('../helper/helper');
 const router = express.Router();
@@ -128,6 +130,28 @@ router.post('/pay', passport.authenticate('bearer', {
     })
 })
 
+// 提醒发货
+router.post('/notify', passport.authenticate('bearer', {
+    session: false
+}), (req, res) => {
+    Order.findById(req.body._id,).select('-__v -products._id').populate('address products.product', '-_id -_v').exec((err, resp) => {
+        if (err) {
+            console.log(err);
+            res.json({
+                success: false,
+                message: '提醒发货失败'
+            })
+        }
+        else {
+            helper.sendNotify(resp);
+            return res.json({
+                success: true,
+                message: '提醒发货成功'
+            });
+        }
+    })
+})
+
 // 删除订单
 router.delete('/', passport.authenticate('bearer', {
     session: false
@@ -169,6 +193,15 @@ router.put('/', passport.authenticate('bearer', {
                     success: true,
                     message: '确认收货成功'
                 })
+
+                order.products.forEach((value,index) => {
+                    Product.findByIdAndUpdate(value.product,{$inc:{sales:value.num}},(err,resp) => {
+                        if (err) {
+                            console.log(err);
+                        }
+                    });
+                })
+                
                 // '确认收货成功后增加一条通知
                 let inform = new Inform({
                     user: req.user._id,
@@ -287,6 +320,7 @@ router.put('/admin', passport.authenticate('bearer', {
         if (err) {
             console.log('err', err);
         } else {
+
             res.json({
                 success: true,
                 message: '发货成功'
@@ -304,6 +338,12 @@ router.put('/admin', passport.authenticate('bearer', {
                     console.log(err);
                 }
             })
+            
+            // Address.findById(order.address,(err,resp) => {
+            //     // 发货通知
+            //     order.address = resp;
+            //     helper.sendNotifyToCustomer(order);
+            // })
         }
     })
 })

@@ -5,6 +5,7 @@ const User = require('./models/user');
 const Admin = require('./models/admin')
 const config = require('./config');
 
+//FIXME 判断的方法需要改进
 module.exports = function(passport) {
     passport.use(new Strategy(
         function(token, done) {

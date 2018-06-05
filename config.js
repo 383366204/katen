@@ -13,6 +13,7 @@ module.exports = {
     }
   },
   emailSign:'开田商城<383366204@qq.com>',
+  notifyEmail:'qq383366204@gmail.com',
   alipay:{
     app_id : '2016091500520178',
     notifyUrl: 'http://www.91funky.com/api/alipay',
